@@ -15,7 +15,7 @@ const MAX_CHARS = 8000;
 const MAX_RETRIES = 5;
 const BASE_DELAY_MS = 4000;
 const MAX_DELAY_MS = 120000;
-const BATCH_SIZE = 100;
+const BATCH_SIZE = parseInt(process.env.EMBEDDING_BATCH_SIZE ?? '100', 10);
 
 let client: OpenAI | null = null;
 
