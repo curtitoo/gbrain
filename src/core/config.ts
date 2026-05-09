@@ -31,6 +31,14 @@ export interface GBrainConfig {
   database_path?: string;
   openai_api_key?: string;
   anthropic_api_key?: string;
+  /** Active LLM provider for chat/synthesize/subagent (v0.30.3+, fork). Default: 'anthropic'. */
+  llm_provider?: 'anthropic' | 'openai';
+  /** Default model id for the active provider. */
+  llm_model?: string;
+  /** Default verdict (judge) model id for synthesize. */
+  llm_verdict_model?: string;
+  /** Max concurrent inflight calls when provider=openai. Default: 8. */
+  openai_max_inflight?: number;
   /** AI gateway config (v0.14+). Default: "openai:text-embedding-3-large" / 1536 / "anthropic:claude-haiku-4-5-20251001". */
   embedding_model?: string;
   embedding_dimensions?: number;
@@ -144,6 +152,11 @@ export function loadConfig(): GBrainConfig | null {
     engine: inferredEngine,
     ...(dbUrl ? { database_url: dbUrl } : {}),
     ...(process.env.OPENAI_API_KEY ? { openai_api_key: process.env.OPENAI_API_KEY } : {}),
+    ...(process.env.ANTHROPIC_API_KEY ? { anthropic_api_key: process.env.ANTHROPIC_API_KEY } : {}),
+    ...(process.env.GBRAIN_LLM_PROVIDER ? { llm_provider: process.env.GBRAIN_LLM_PROVIDER as 'anthropic' | 'openai' } : {}),
+    ...(process.env.GBRAIN_LLM_MODEL ? { llm_model: process.env.GBRAIN_LLM_MODEL } : {}),
+    ...(process.env.GBRAIN_LLM_VERDICT_MODEL ? { llm_verdict_model: process.env.GBRAIN_LLM_VERDICT_MODEL } : {}),
+    ...(process.env.GBRAIN_OPENAI_MAX_INFLIGHT ? { openai_max_inflight: Number(process.env.GBRAIN_OPENAI_MAX_INFLIGHT) } : {}),
     ...(process.env.GBRAIN_EMBEDDING_MODEL ? { embedding_model: process.env.GBRAIN_EMBEDDING_MODEL } : {}),
     ...(process.env.GBRAIN_EMBEDDING_DIMENSIONS ? { embedding_dimensions: parseInt(process.env.GBRAIN_EMBEDDING_DIMENSIONS, 10) } : {}),
     ...(process.env.GBRAIN_EXPANSION_MODEL ? { expansion_model: process.env.GBRAIN_EXPANSION_MODEL } : {}),

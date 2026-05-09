@@ -407,7 +407,9 @@ export interface SubagentHandlerData {
   prompt: string;
   /** Optional subagent definition path (skills/subagents/*.md or plugin). */
   subagent_def?: string;
-  /** Anthropic model id. Defaults to sonnet at handler resolution time. */
+  /** LLM provider. Defaults to configured provider at handler resolution time. */
+  provider?: 'anthropic' | 'openai';
+  /** Provider model id. Defaults to configured LLM model at handler resolution time. */
   model?: string;
   /** Max assistant turns before the loop fails with stop_reason='max_turns'. */
   max_turns?: number;
