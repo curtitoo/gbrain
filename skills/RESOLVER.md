@@ -24,6 +24,7 @@ This is the dispatcher. Skills are the implementation. **Read the skill file bef
 | "validate frontmatter", "check frontmatter", "fix frontmatter", "frontmatter audit", "brain lint" | `skills/frontmatter-guard/SKILL.md` |
 | "Triage idea", "evaluate idea", "advance idea", "kill idea", "idea pipeline status" | `skills/idea-triage/SKILL.md` |
 | "Triage inbox", "process inbox", "classify inbox", "clean inbox" | `skills/inbox-triage/SKILL.md` |
+| "Promote signal", "signal to idea", "convert signal", "high-confidence signal", "signal_type business_idea" | `skills/signal-to-idea/SKILL.md` |
 
 
 ## Namespace routing (brain filing by type)
