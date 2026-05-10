@@ -781,13 +781,24 @@ async function collectChildPutPageSlugs(
   if (childIds.length === 0) return [];
   // Raw fetch — NO SELECT DISTINCT. Preserves per-child slug duplicates so
   // the orchestrator sees what each child wrote.
+  // OpenAI provider stores tool input as a JSONB-encoded string (the LLM returns
+  // function.arguments as a JSON string; the SDK roundtrip + ::jsonb cast preserves
+  // it as a JSONB string rather than an object). Anthropic returns a parsed object.
+  // COALESCE handles both: try input->>'slug' first, then parse if input is a
+  // JSONB string and extract the slug.
   const rows = await engine.executeRaw<{ job_id: number; slug: string }>(
-    `SELECT job_id, input->>'slug' AS slug
+    `SELECT job_id, COALESCE(
+        input->>'slug',
+        CASE
+          WHEN jsonb_typeof(input) = 'string'
+          THEN (input #>> '{}')::jsonb->>'slug'
+          ELSE NULL
+        END
+      ) AS slug
        FROM subagent_tool_executions
       WHERE job_id = ANY($1::int[])
         AND tool_name = 'brain_put_page'
-        AND status = 'complete'
-        AND input ? 'slug'`,
+        AND status = 'complete'`,
     [childIds],
   );
   const rewritten = new Set<string>();
