@@ -139,7 +139,17 @@
       "kind": "conversation",
       "directory": "conversations/",
       "examples": ["conversations/chatgpt/{thread-slug}.md", "conversations/claude/{thread-slug}.md"],
-      "description": "Imported chat exports (ChatGPT, Claude, etc.) where the conversation itself is the artifact. Cross-link concepts and people from the conversation; the conversation page is the source-of-truth for the dialog. Distinct from voice-notes/ (which holds raw voice capture)."
+      "description": "Imported chat exports (ChatGPT, Claude, etc.) where the conversation itself is the artifact. Cross-link concepts and people from the conversation; the conversation page is the source-of-truth for the dialog. Distinct from voice-notes/ (which holds raw voice capture).",
+      "kind": "thesis",
+      "directory": "theses/",
+      "examples": ["working theories about a market or trend", "hypothesis pages with state field", "investment theses"],
+      "description": "A hypothesis or working theory the user is testing over time. Use frontmatter `state: hypothesized|tested|confirmed|refuted|refined` to track lifecycle. Per Decision G (2026-05-04): passive convention only — no automated state machine. Synthesize phase may write here when the user expresses a thesis-shaped idea."
+    },
+    {
+      "kind": "trend",
+      "directory": "trends/",
+      "examples": ["emerging market patterns", "technology adoption curves", "macro shifts"],
+      "description": "An observed pattern or shift in a market, technology, or behavior the user wants to track. Pages here are descriptive/observational. Per Decision G (2026-05-04): passive convention only. Synthesize phase may write here when content is best framed as a trend rather than a thesis or concept."
     }
   ],
   "sources_dir": {
@@ -159,6 +169,8 @@
       "wiki/originals/*",
       "wiki/personal/patterns/*",
       "wiki/people/*",
+      "wiki/theses/*",
+      "wiki/trends/*",
       "dream-cycle-summaries/*"
     ]
   }
