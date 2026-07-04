@@ -41,6 +41,15 @@ function flagPresent(args: string[], name: string): boolean {
   return args.includes(name);
 }
 
+function ensurePositiveInt(raw: string | undefined, label: string): number {
+  const n = raw === undefined ? NaN : Number.parseInt(raw, 10);
+  if (!Number.isInteger(n) || n <= 0) {
+    console.error(`Invalid ${label} "${raw ?? ''}". Expected a positive integer.`);
+    process.exit(1);
+  }
+  return n;
+}
+
 async function resolveBrainDir(engine: BrainEngine | null, explicitDir: string | null): Promise<string> {
   if (explicitDir) {
     if (!existsSync(explicitDir)) {
@@ -105,6 +114,188 @@ function writeBody(path: string, body: string): void {
   writeFileSync(path, body, 'utf-8');
 }
 
+type ProposalStatus = 'pending' | 'accepted' | 'rejected' | 'superseded';
+
+interface TakeProposalRow {
+  id: number | string;
+  source_id: string;
+  page_slug: string;
+  proposed_at: string | Date;
+  proposal_run_id: string;
+  status: ProposalStatus;
+  claim_text: string;
+  kind: TakeKind;
+  holder: string;
+  weight: number;
+  domain: string | null;
+  model_id: string;
+  acted_at?: string | Date | null;
+  acted_by?: string | null;
+  promoted_row_num?: number | null;
+  predicted_brier?: number | null;
+  predicted_brier_bucket_n?: number | null;
+}
+
+function ensureProposalStatus(raw: string | undefined): ProposalStatus {
+  const status = raw ?? 'pending';
+  if (status !== 'pending' && status !== 'accepted' && status !== 'rejected' && status !== 'superseded') {
+    console.error(`Invalid --status "${status}". Expected: pending, accepted, rejected, superseded.`);
+    process.exit(1);
+  }
+  return status;
+}
+
+function actedBy(args: string[]): string {
+  return flagValue(args, '--by')
+    ?? process.env.GBRAIN_ACTOR
+    ?? process.env.USER
+    ?? process.env.LOGNAME
+    ?? 'operator';
+}
+
+function proposalTakeSource(p: TakeProposalRow): string {
+  const parts = [`take_proposal:${p.id}`];
+  if (p.domain) parts.push(`domain:${p.domain}`);
+  if (p.proposal_run_id) parts.push(`run:${p.proposal_run_id}`);
+  return parts.join(' ');
+}
+
+function jsonStringify(value: unknown): string {
+  return JSON.stringify(value, (_key, v) => typeof v === 'bigint' ? v.toString() : v, 2);
+}
+
+async function loadTakeProposal(engine: BrainEngine, id: number): Promise<TakeProposalRow | null> {
+  const rows = await engine.executeRaw<TakeProposalRow>(
+    `SELECT id, source_id, page_slug, proposed_at, proposal_run_id, status,
+            claim_text, kind, holder, weight, domain, model_id,
+            acted_at, acted_by, promoted_row_num,
+            predicted_brier, predicted_brier_bucket_n
+       FROM take_proposals
+      WHERE id = $1
+      LIMIT 1`,
+    [id],
+  );
+  return rows[0] ?? null;
+}
+
+export async function listTakeProposals(
+  engine: BrainEngine,
+  opts: { status?: ProposalStatus; sourceId?: string; limit?: number } = {},
+): Promise<TakeProposalRow[]> {
+  const params: unknown[] = [opts.status ?? 'pending'];
+  let where = `status = $1`;
+  if (opts.sourceId) {
+    params.push(opts.sourceId);
+    where += ` AND source_id = $${params.length}`;
+  }
+  const rawLimit = opts.limit ?? 50;
+  const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(500, Math.floor(rawLimit))) : 50;
+  params.push(limit);
+  return engine.executeRaw<TakeProposalRow>(
+    `SELECT id, source_id, page_slug, proposed_at, proposal_run_id, status,
+            claim_text, kind, holder, weight, domain, model_id,
+            acted_at, acted_by, promoted_row_num,
+            predicted_brier, predicted_brier_bucket_n
+       FROM take_proposals
+      WHERE ${where}
+      ORDER BY proposed_at DESC, id DESC
+      LIMIT $${params.length}`,
+    params,
+  );
+}
+
+export async function acceptTakeProposal(
+  engine: BrainEngine,
+  id: number,
+  opts: { brainDir: string; actor?: string },
+): Promise<{ proposal: TakeProposalRow; rowNum: number }> {
+  const proposal = await loadTakeProposal(engine, id);
+  if (!proposal) {
+    console.error(`Proposal #${id} not found.`);
+    process.exit(1);
+  }
+  if (proposal.status !== 'pending') {
+    console.error(`Proposal #${id} is ${proposal.status}; only pending proposals can be accepted.`);
+    process.exit(1);
+  }
+
+  let promotedRowNum = 0;
+  await withPageLock(proposal.page_slug, async () => {
+    const source = proposalTakeSource(proposal);
+    const path = pageFilePath(opts.brainDir, proposal.page_slug);
+    const body = readBodyOrEmpty(path);
+    const { body: nextBody, rowNum } = upsertTakeRow(body, {
+      claim: proposal.claim_text,
+      kind: proposal.kind,
+      holder: proposal.holder,
+      weight: Number(proposal.weight),
+      source,
+      active: true,
+    });
+    writeBody(path, nextBody);
+
+    const pageId = await getPageId(engine, proposal.page_slug);
+    await engine.addTakesBatch([{
+      page_id: pageId,
+      row_num: rowNum,
+      claim: proposal.claim_text,
+      kind: proposal.kind,
+      holder: proposal.holder,
+      weight: Number(proposal.weight),
+      source,
+      active: true,
+      superseded_by: null,
+    }]);
+
+    const updated = await engine.executeRaw<{ id: number }>(
+      `UPDATE take_proposals
+          SET status = 'accepted', acted_at = now(), acted_by = $2, promoted_row_num = $3
+        WHERE id = $1 AND status = 'pending'
+        RETURNING id`,
+      [id, opts.actor ?? 'operator', rowNum],
+    );
+    if (!updated[0]) {
+      console.error(`Proposal #${id} changed before it could be marked accepted.`);
+      process.exit(1);
+    }
+    promotedRowNum = rowNum;
+  });
+
+  return { proposal, rowNum: promotedRowNum };
+}
+
+export async function rejectTakeProposal(
+  engine: BrainEngine,
+  id: number,
+  opts: { actor?: string; reason?: string } = {},
+): Promise<TakeProposalRow> {
+  const proposal = await loadTakeProposal(engine, id);
+  if (!proposal) {
+    console.error(`Proposal #${id} not found.`);
+    process.exit(1);
+  }
+  if (proposal.status !== 'pending') {
+    console.error(`Proposal #${id} is ${proposal.status}; only pending proposals can be rejected.`);
+    process.exit(1);
+  }
+  const actor = opts.reason ? `${opts.actor ?? 'operator'} reason:${opts.reason}` : (opts.actor ?? 'operator');
+  const updated = await engine.executeRaw<TakeProposalRow>(
+    `UPDATE take_proposals
+        SET status = 'rejected', acted_at = now(), acted_by = $2
+      WHERE id = $1 AND status = 'pending'
+      RETURNING id, source_id, page_slug, proposed_at, proposal_run_id, status,
+                claim_text, kind, holder, weight, domain, model_id,
+                acted_at, acted_by, promoted_row_num,
+                predicted_brier, predicted_brier_bucket_n`,
+    [id, actor],
+  );
+  if (!updated[0]) {
+    console.error(`Proposal #${id} changed before it could be marked rejected.`);
+    process.exit(1);
+  }
+  return updated[0];
+}
+
 // --- Subcommands ---
 
 async function cmdList(engine: BrainEngine, args: string[]): Promise<void> {
@@ -167,6 +358,56 @@ async function cmdSearch(engine: BrainEngine, args: string[]): Promise<void> {
     const score = Number(h.score).toFixed(2);
     console.log(`${h.page_slug}#${h.row_num} [${h.kind} • ${h.holder} • w=${Number(h.weight).toFixed(2)} • s=${score}]\n  ${h.claim}\n`);
   }
+}
+
+async function cmdPropose(engine: BrainEngine, args: string[]): Promise<void> {
+  if (flagPresent(args, '--list')) {
+    const rows = await listTakeProposals(engine, {
+      status: ensureProposalStatus(flagValue(args, '--status')),
+      sourceId: flagValue(args, '--source'),
+      limit: parseInt(flagValue(args, '--limit') ?? '50', 10),
+    });
+    if (flagPresent(args, '--json')) {
+      console.log(jsonStringify(rows));
+      return;
+    }
+    if (rows.length === 0) {
+      console.log('No take proposals match.');
+      return;
+    }
+    console.log(`# Take proposals (${rows.length})\n`);
+    for (const p of rows) {
+      const when = p.proposed_at instanceof Date ? p.proposed_at.toISOString() : String(p.proposed_at);
+      const brier = p.predicted_brier === null || p.predicted_brier === undefined ? '' : ` • brier=${Number(p.predicted_brier).toFixed(3)}`;
+      const promoted = p.promoted_row_num ? ` • promoted=#${p.promoted_row_num}` : '';
+      console.log(`#${p.id} [${p.status} • ${p.source_id} • ${p.page_slug} • ${p.kind} • ${p.holder} • w=${Number(p.weight).toFixed(2)}${brier}${promoted}]`);
+      console.log(`  ${p.claim_text}`);
+      console.log(`  proposed=${when} run=${p.proposal_run_id}${p.domain ? ` domain=${p.domain}` : ''}\n`);
+    }
+    return;
+  }
+
+  const acceptIdx = args.indexOf('--accept');
+  if (acceptIdx !== -1) {
+    const id = ensurePositiveInt(args[acceptIdx + 1], '--accept');
+    const brainDir = await resolveBrainDir(engine, flagValue(args, '--dir') ?? null);
+    const { proposal, rowNum } = await acceptTakeProposal(engine, id, { brainDir, actor: actedBy(args) });
+    console.log(`Accepted proposal #${id} → ${proposal.page_slug}#${rowNum}.`);
+    return;
+  }
+
+  const rejectIdx = args.indexOf('--reject');
+  if (rejectIdx !== -1) {
+    const id = ensurePositiveInt(args[rejectIdx + 1], '--reject');
+    const proposal = await rejectTakeProposal(engine, id, { actor: actedBy(args), reason: flagValue(args, '--reason') });
+    console.log(`Rejected proposal #${id} on ${proposal.page_slug}.`);
+    return;
+  }
+
+  console.error('Usage: gbrain takes propose --list [--status pending] [--source id] [--json]');
+  console.error('       gbrain takes propose --accept <id> [--by actor] [--dir <path>]');
+  console.error('       gbrain takes propose --reject <id> [--reason "..."] [--by actor]');
+  process.exit(1);
 }
 
 async function cmdAdd(engine: BrainEngine, args: string[]): Promise<void> {
@@ -536,6 +777,12 @@ Subcommands:
                                           List takes for a page
   takes search "<query>" [--limit N] [--json]
                                           Keyword search across all takes
+  takes propose --list [--status pending] [--source id] [--json]
+                                          List queued take proposals
+  takes propose --accept <id> [--by actor] [--dir <path>]
+                                          Promote a proposal into the page fence + canonical takes
+  takes propose --reject <id> [--reason "..."] [--by actor]
+                                          Reject a proposal without deleting audit history
   takes add <slug> --claim "..." --kind <fact|take|bet|hunch> --who <holder>
                    [--weight 0.5] [--source "..."] [--since YYYY-MM]
                                           Append a take (markdown + DB)
@@ -564,6 +811,7 @@ Common flags:
 
   switch (sub) {
     case 'search':      return cmdSearch(engine, rest);
+    case 'propose':     return cmdPropose(engine, rest);
     case 'add':         return cmdAdd(engine, rest);
     case 'update':      return cmdUpdate(engine, rest);
     case 'supersede':   return cmdSupersede(engine, rest);
