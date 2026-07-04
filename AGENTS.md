@@ -4,6 +4,10 @@ This is your install + operating protocol. Claude Code reads `./CLAUDE.md` autom
 Everyone else (Codex, Cursor, OpenClaw, Aider, Continue, or an LLM fetching via URL):
 start here.
 
+## Fork governance
+
+SC-Holdings fork rule: author on staging, capture via `capture/*` PR, then deploy through Gate B. For grounding, use prod gbrain; rehearse risky writes on the staging sidecar. Never push to upstream.
+
 ## Install (5 min)
 
 1. Install gbrain via Bun (the canonical path):
