@@ -1,7 +1,8 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "companion": "_brain-filing-rules.md",
-  "description": "Canonical (machine-readable) brain filing rules. The .md companion is the human explainer; this JSON is what `gbrain check-resolvable` audits against. Keep both in sync.",
+  "schema_pack": "gbrain-curtis-v2",
+  "description": "Canonical (machine-readable) brain filing rules, matched 1:1 to skills/gbrain-curtis-v2.pack.yaml — one rule per declared path prefix (A7/A14: pack + RESOLVER.md + this file change in ONE commit). The .md companion is the human explainer; this JSON is what `gbrain check-resolvable`/filing-audit validates skill writes_to: lists against, and what archive-crawler reads at runtime.",
   "rules": [
     {
       "kind": "person",
@@ -16,6 +17,18 @@
       "description": "A page whose primary subject is one company or organization."
     },
     {
+      "kind": "company",
+      "directory": "products/",
+      "examples": ["claude-code", "specific products"],
+      "description": "Product pages (company type, subtype product)."
+    },
+    {
+      "kind": "company",
+      "directory": "orgs/",
+      "examples": ["YC", "non-company organizations"],
+      "description": "Non-company org pages (company type, subtype org)."
+    },
+    {
       "kind": "deal",
       "directory": "deals/",
       "examples": ["seed rounds", "acquisitions"],
@@ -28,120 +41,277 @@
       "description": "A meeting transcript or minutes. Propagate entities to companies/ and people/ pages."
     },
     {
-      "kind": "concept",
-      "directory": "concepts/",
-      "examples": ["mental models", "theses", "frameworks"],
-      "description": "A reusable idea, framework, or mental model not tied to a specific person/company."
+      "kind": "calendar-event",
+      "directory": "calendar/",
+      "examples": ["calendar/YYYY-MM-DD-<event>.md"],
+      "description": "Calendar events, date-keyed; attendees cross-linked to people/. Replaces retired cal/ and daily/calendar/."
     },
     {
-      "kind": "project",
-      "directory": "projects/",
-      "examples": ["internal initiatives", "multi-session work"],
-      "description": "A multi-session piece of work with its own arc."
+      "kind": "email",
+      "directory": "emails/",
+      "examples": ["email threads"],
+      "description": "Email captures. Replaces the retired correspondence/ prefix."
+    },
+    {
+      "kind": "slack",
+      "directory": "slack/",
+      "examples": ["slack threads worth keeping"],
+      "description": "Slack captures."
+    },
+    {
+      "kind": "tweet",
+      "directory": "tweets/",
+      "examples": ["saved tweets", "threads"],
+      "description": "Tweet/thread captures."
+    },
+    {
+      "kind": "tweet",
+      "directory": "twitter/",
+      "examples": ["legacy tweet imports"],
+      "description": "Equivalent prefix for tweet type; prefer tweets/ for new pages."
+    },
+    {
+      "kind": "social-digest",
+      "directory": "digests/social/",
+      "examples": ["influencer pipeline daily/monthly digests"],
+      "description": "Cron-generated social digests."
+    },
+    {
+      "kind": "media",
+      "directory": "media/",
+      "examples": ["media/x/{handle}/ archives", "format-keyed captures"],
+      "description": "External content where the source format is the unifying frame. External essay-shaped content goes to media lanes, never writing/."
+    },
+    {
+      "kind": "media",
+      "directory": "videos/",
+      "examples": ["talks", "YouTube captures"],
+      "description": "Video content (media type, subtype video)."
+    },
+    {
+      "kind": "media",
+      "directory": "articles/",
+      "examples": ["saved articles"],
+      "description": "Article content (media type, subtype article). inbox-triage promotion target."
+    },
+    {
+      "kind": "media",
+      "directory": "essays/",
+      "examples": ["external essays"],
+      "description": "Essay content (media type, subtype essay)."
+    },
+    {
+      "kind": "media",
+      "directory": "books/",
+      "examples": ["book pages", "book-mirror synthesis (stamped type: synthesis)"],
+      "description": "Book content (media type, subtype book)."
+    },
+    {
+      "kind": "media",
+      "directory": "podcasts/",
+      "examples": ["podcast episodes"],
+      "description": "Podcast content (media type, subtype podcast)."
+    },
+    {
+      "kind": "media",
+      "directory": "blog/",
+      "examples": ["blog posts (external)"],
+      "description": "Blog content (media type, subtype blog)."
+    },
+    {
+      "kind": "media",
+      "directory": "posts/",
+      "examples": ["saved posts"],
+      "description": "Post content (media type, subtype blog). KEPT per Curtis 2026-07-10."
+    },
+    {
+      "kind": "synthesis",
+      "directory": "media/books/",
+      "examples": ["personalized book mirrors", "two-column chapter analyses"],
+      "description": "Sanctioned synthesis exception (book-mirror output). Pages here stamp type: synthesis in frontmatter; raw book ingest goes to books/."
+    },
+    {
+      "kind": "synthesis",
+      "directory": "media/articles/",
+      "examples": ["personalized article reads", "long-form content tailored to reader"],
+      "description": "Sanctioned synthesis exception (article personalization/enrichment output). Pages here stamp type: synthesis; raw article ingest goes to articles/."
+    },
+    {
+      "kind": "source",
+      "directory": "sources/",
+      "examples": ["bulk imports", "API dumps", "periodic captures"],
+      "description": "ONLY raw data feeding multiple pages — see sources_dir below."
+    },
+    {
+      "kind": "source",
+      "directory": "conversations/",
+      "examples": ["conversations/chatgpt/{thread}.md", "conversations/claude/{thread}.md"],
+      "description": "Imported chat exports where the conversation is the artifact (source type, subtype conversation)."
+    },
+    {
+      "kind": "source",
+      "directory": "voice-notes/",
+      "examples": ["raw transcripts", "audio capture pages"],
+      "description": "Voice-note transcript holders (source type, subtype voice-note). Derived content routes via the RESOLVER lane test."
     },
     {
       "kind": "analysis",
       "directory": "analysis/",
-      "examples": ["deep dives", "comparative studies"],
-      "description": "A long-form analysis of a specific topic."
+      "examples": ["deep dives", "web-research deltas", "citation-verified claims"],
+      "description": "Dated investigation products. perplexity-research and academic-verify file HERE (research/ and agent/ RETIRED); author via source: frontmatter."
     },
     {
-      "kind": "civic",
-      "directory": "civic/",
-      "examples": ["policy analysis", "government topics"],
-      "description": "Public-sector, policy, or civic-issue content."
+      "kind": "thesis",
+      "directory": "theses/",
+      "examples": ["investment theses", "held strategic positions"],
+      "description": "A falsifiable position someone holds over time, expected to be scored."
+    },
+    {
+      "kind": "idea",
+      "directory": "ideas/",
+      "examples": ["product ideas", "essay seeds", "business candidates"],
+      "description": "Actionable candidates. stage: frontmatter is a MIRROR; the kanban card owns work state."
+    },
+    {
+      "kind": "concept",
+      "directory": "concepts/",
+      "examples": ["mental models", "frameworks", "definitions", "guides (kind: guide)", "trends (kind: trend)"],
+      "description": "Reusable reference knowledge. Guides carry frontmatter kind: guide (guides/ RETIRED)."
+    },
+    {
+      "kind": "decision",
+      "directory": "decisions/",
+      "examples": ["major decision records with alternatives + kill-criteria"],
+      "description": "MAJOR decisions only. EVERY decision is first a dated timeline entry (DECISION HH:MM+nonce) on its SUBJECT page. See RESOLVER.md §Decision system."
+    },
+    {
+      "kind": "project",
+      "directory": "projects/",
+      "examples": ["projects/hermes-config", "projects/vps-infra"],
+      "description": "Project ENTITY pages only. Strategy/roadmap documents go to analysis/ or concepts/, linked FROM the project page."
+    },
+    {
+      "kind": "tech",
+      "directory": "tech/",
+      "examples": ["external repos", "tools", "SaaS"],
+      "description": "EXTERNAL tech as page SUBJECT only (softened from v3.5 'any repo always'). Internal architecture → projects/<repo> + concepts (domain: hermes)."
+    },
+    {
+      "kind": "personal",
+      "directory": "personal/",
+      "examples": ["logistics", "family", "health"],
+      "description": "Personal-life content — kept separate from work."
     },
     {
       "kind": "writing",
       "directory": "writing/",
       "examples": ["essays", "drafts", "published pieces"],
-      "description": "A piece of prose authored by the user."
+      "description": "SAVE-GUARD (LAW): ONLY Curtis-authored or Curtis-commissioned prose. External essay-shaped content → media/ lanes or concepts/."
     },
     {
-      "kind": "guide",
-      "directory": "guides/",
-      "examples": ["runbooks", "how-to docs"],
-      "description": "A guide or runbook authored for future reference."
-    },
-    {
-      "kind": "tech",
-      "directory": "tech/",
-      "examples": ["APIs", "libraries", "language notes"],
-      "description": "Technical references and tooling notes not tied to a specific company."
-    },
-    {
-      "kind": "finance",
-      "directory": "finance/",
-      "examples": ["market data", "metrics"],
-      "description": "Financial reference data not tied to a single deal."
-    },
-    {
-      "kind": "personal",
-      "directory": "personal/",
-      "examples": ["logistics", "family"],
-      "description": "Personal-life content — kept separate from work."
-    },
-    {
-      "kind": "idea",
-      "directory": "ideas/",
-      "examples": ["product ideas", "essay seeds", "back-of-envelope concepts"],
-      "description": "Generative ideas the user might build, write, or expand later. Stub-shaped pages that mature over time. voice-note-ingest, archive-crawler, and similar capture-flavored skills file here when content is something to potentially act on."
-    },
-    {
-      "kind": "research",
-      "directory": "research/",
-      "examples": ["web-research deltas", "freshness checks", "citation-verified claims"],
-      "description": "Web-research output: what is NEW vs already-known about a topic, citation-checked claims, freshness deltas. perplexity-research and academic-verify file here."
-    },
-    {
-      "kind": "original",
+      "kind": "writing",
       "directory": "originals/",
-      "examples": ["the user's own theses", "frameworks the user generated", "novel observations the user expressed"],
-      "description": "Pages where the user is the primary author of the idea — original thinking, not summarizations of someone else's work. voice-note-ingest, archive-crawler, signal-detector route content here when the user is the originator."
+      "examples": ["dream-captured original framings"],
+      "description": "The dream cycle's lane for Curtis-original thinking (writing type, subtype original). Same save-guard as writing/."
     },
     {
-      "kind": "voice-note",
-      "directory": "voice-notes/",
-      "examples": ["raw transcripts", "audio capture pages"],
-      "description": "Voice-note transcript holders, especially when the content is a random thought that doesn't cleanly fit originals/, concepts/, or another subject directory. voice-note-ingest is the primary writer."
+      "kind": "atom",
+      "directory": "atoms/",
+      "examples": ["extraction atoms", "manual atoms"],
+      "description": "Annotation atoms (origin subtypes: extraction/manual/lore)."
     },
     {
-      "kind": "openclaw",
-      "directory": "openclaw/",
-      "examples": ["agent-state notes"],
-      "description": "Notes about the host OpenClaw agent itself, not the underlying entities."
+      "kind": "note",
+      "directory": "notes/",
+      "examples": ["keepable content fitting no lane"],
+      "description": "Catch-all. Declared LAST in the pack — never shadows real lanes."
     },
     {
-      "kind": "synthesis-output",
-      "directory": "media/books/",
-      "examples": ["personalized book mirrors", "two-column chapter analyses"],
-      "description": "Sanctioned exception to 'file by primary subject' for sui generis synthesized output that is one-of-one to a single book and a specific reader. Format-prefixed under media/<format>/ is allowed for synthesis output only, never for raw ingest. See _brain-filing-rules.md."
+      "kind": "note",
+      "directory": "inbox/",
+      "examples": ["untriaged captures"],
+      "description": "Inbox drawer (note type, subtype inbox). inbox-triage promotes OUT via the lane test."
     },
     {
-      "kind": "synthesis-output",
-      "directory": "media/articles/",
-      "examples": ["personalized article reads", "long-form content tailored to reader"],
-      "description": "Same sanctioned exception as media/books/. One-of-one synthesis output of an article personalized for the reader. Distinct from raw article ingest, which goes to the article's primary-subject directory."
+      "kind": "note",
+      "directory": "archive/",
+      "examples": ["retired-but-keepable pages"],
+      "description": "Archive drawer (note type, subtype archive)."
     },
     {
-      "kind": "daily",
-      "directory": "daily/",
-      "examples": ["daily/calendar/YYYY-MM-DD.md", "daily/notes/YYYY-MM-DD.md"],
-      "description": "Date-keyed pages for events, calendar entries, or daily notes. Calendar imports land at daily/calendar/YYYY-MM-DD.md with attendees cross-linked to people/. Use when the primary subject is the date itself, not a person or topic."
+      "kind": "note",
+      "directory": "prompts/",
+      "examples": ["reusable prompts"],
+      "description": "Prompts drawer (note type, subtype prompts)."
     },
     {
-      "kind": "media-format",
-      "directory": "media/",
-      "examples": ["media/x/{handle}/", "media/audio/", "media/video/"],
-      "description": "Format-prefixed parent for media-by-source-format ingest. Subdirectories like media/x/{handle}/ hold X/Twitter archives, media/audio/ holds podcast/voice captures. The format-prefix lives only when the content is sui generis to the source format AND lacks a clean primary-subject directory. Prefer subject-by-subject filing; fall through to media/ only when the source format IS the unifying frame."
+      "kind": "note",
+      "directory": "programs/",
+      "examples": ["fitness programs", "routines"],
+      "description": "Programs drawer (note type, subtype programs)."
     },
     {
-      "kind": "conversation",
-      "directory": "conversations/",
-      "examples": ["conversations/chatgpt/{thread-slug}.md", "conversations/claude/{thread-slug}.md"],
-      "description": "Imported chat exports (ChatGPT, Claude, etc.) where the conversation itself is the artifact. Cross-link concepts and people from the conversation; the conversation page is the source-of-truth for the dialog. Distinct from voice-notes/ (which holds raw voice capture)."
+      "kind": "note",
+      "directory": "org/",
+      "examples": ["org structure notes"],
+      "description": "Org drawer (note type, subtype org). Distinct from orgs/ (company)."
+    },
+    {
+      "kind": "note",
+      "directory": "hiring/",
+      "examples": ["hiring pipeline notes"],
+      "description": "Hiring drawer (note type, subtype hiring)."
+    },
+    {
+      "kind": "note",
+      "directory": "household/",
+      "examples": ["household maintenance"],
+      "description": "Household drawer (note type, subtype household)."
+    },
+    {
+      "kind": "note",
+      "directory": "finance/",
+      "examples": ["budgets", "market reference"],
+      "description": "Finance drawer (note type, subtype finance)."
+    },
+    {
+      "kind": "dream-summary",
+      "directory": "dream-cycle-summaries/",
+      "examples": ["dream-cycle-summaries/YYYY-MM-DD"],
+      "description": "MACHINE LANE — dream orchestrator only. Humans and agents never file here."
     }
   ],
+  "frontmatter_only_types": [
+    {
+      "kind": "code",
+      "description": "Stamped type: code by the gbrain-code hook (no path lane)."
+    },
+    {
+      "kind": "image",
+      "description": "Stamped type: image by media tooling (no path lane)."
+    },
+    {
+      "kind": "synthesis",
+      "description": "Sui-generis synthesized output (book mirrors, personalized reads) at media/<format>/ paths with stamped type: synthesis. The narrow sanctioned exception to file-by-primary-subject."
+    }
+  ],
+  "retired_directories": {
+    "description": "Prefixes that MUST NOT receive new pages. Writers listed are retargeted (Phase 2 of the 2026-07-11 implementation).",
+    "entries": [
+      { "directory": "research/", "goes_to": "analysis/", "was": "perplexity-research, academic-verify" },
+      { "directory": "agent/", "goes_to": "analysis/", "was": "agent reports" },
+      { "directory": "correspondence/", "goes_to": "emails/", "was": "email-to-brain feeder" },
+      { "directory": "daily/", "goes_to": "calendar/ (events) or personal/ (journaling)", "was": "calendar-sync" },
+      { "directory": "cal/", "goes_to": "calendar/", "was": "base-v1 convention" },
+      { "directory": "ops/", "goes_to": "NOWHERE — tasks live in kanban; op logs stay out of the brain", "was": "ops/tasks, dream shadow-log" },
+      { "directory": "guides/", "goes_to": "concepts/ with kind: guide", "was": "guide pages" },
+      { "directory": "civic/", "goes_to": "concepts/ or notes/", "was": "civic content" },
+      { "directory": "yc/", "goes_to": "companies/ or concepts/", "was": "YC content" },
+      { "directory": "plans/", "goes_to": "NOWHERE — kanban owns daily planning", "was": "daily-task-prep" },
+      { "directory": "scratch/", "goes_to": "FENCED OUT — never a knowledge lane", "was": "operational scratch" },
+      { "directory": "wiki/ (as a filing target)", "goes_to": "MACHINE YARD — dream-only via dream_synthesize_paths", "was": "dream cycle (unchanged, machine-only)" }
+    ]
+  },
   "sources_dir": {
     "directory": "sources/",
     "purpose": "ONLY for raw data: bulk imports, API dumps, periodic captures. A page with a clear primary subject (person, company, concept) does NOT belong here.",
@@ -149,11 +319,13 @@
   },
   "notes": [
     "The PRIMARY SUBJECT of the content determines the directory, not the format or source skill.",
+    "The lane test in RESOLVER.md §The lanes is authoritative for writing/ vs theses/ vs ideas/ vs analysis/ vs concepts/.",
     "When in doubt: what would you search for to find this page again?",
-    "Cross-link from related directories via back-links — do not duplicate content."
+    "Cross-link from related directories via back-links — do not duplicate content.",
+    "Tasks NEVER live in the brain — kanban cards own work state."
   ],
   "dream_synthesize_paths": {
-    "description": "Single source of truth for the v0.23 dream-cycle synthesize/patterns trusted-workspace allow-list. The cycle's synthesize phase reads this list and threads it as `allowed_slug_prefixes` to every subagent it dispatches; put_page enforces it server-side. Editing this list is the ONLY way to add a new directory the synthesis subagent may write to.",
+    "description": "Single source of truth for the v0.23 dream-cycle synthesize/patterns trusted-workspace allow-list. The cycle's synthesize phase reads this list and threads it as `allowed_slug_prefixes` to every subagent it dispatches; put_page enforces it server-side. Editing this list is the ONLY way to add a new directory the synthesis subagent may write to. This allowlist — not any pack prefix — is the wiki-guard invariant (A13).",
     "globs": [
       "wiki/personal/reflections/*",
       "wiki/originals/*",

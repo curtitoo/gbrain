@@ -12,7 +12,7 @@ triggers:
 mutating: true
 writes_pages: true
 writes_to:
-  - concepts/
+  - analysis/
 ---
 
 # academic-verify — Trace Claims to Source Data
@@ -44,7 +44,7 @@ At each step, it answers:
 - **Are there confounding factors?** (Other interventions, policy changes, COVID, sampling bias?)
 - **Is the comparison fair?** (Cherry-picked comparison group? Survivorship bias?)
 
-The output is a brain page under `concepts/<claim-slug>.md` that records
+The output is a brain page under `analysis/<claim-slug>.md` that records
 the claim, the trace, and the verdict — so future references to the
 same claim can re-use the verified analysis.
 
@@ -96,7 +96,7 @@ Step 3: Invoke perplexity-research with citation-mode prompt
     • Citations of the paper that critique or contextualize it
 
 Step 4: Format the verdict
-  Write the result to concepts/<claim-slug>.md. The verdict is one of:
+  Write the result to analysis/<claim-slug>.md. The verdict is one of:
     • Verified — claim is accurate; raw data available; replication exists
     • Partially verified — claim correct on the underlying paper but
       methodology has known limits; record limits explicitly

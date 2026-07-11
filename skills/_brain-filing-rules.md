@@ -1,9 +1,21 @@
 # Brain Filing Rules -- MANDATORY for all skills that write to the brain
 
+> v2.0.0 (2026-07-11, curtis-v2 conventions). This file, `_brain-filing-rules.json`,
+> and `gbrain-curtis-v2.pack.yaml` are ONE contract — change them in ONE commit
+> (A14). The lane test in `RESOLVER.md` §The lanes is authoritative for
+> writing/ vs theses/ vs ideas/ vs analysis/ vs concepts/ boundaries.
+
 ## The Rule
 
 The PRIMARY SUBJECT of the content determines where it goes. Not the format,
 not the source, not the skill that's running.
+
+Two LAWS on top (zero exceptions — see RESOLVER.md §LAWS):
+- **wiki/ and dream-cycle-summaries/ are the machine yard.** Humans and agents
+  never file there; only the dream cycle writes them, via the
+  `dream_synthesize_paths` allowlist in `_brain-filing-rules.json`.
+- **writing/ (and originals/) is Curtis-authored prose ONLY.** External content
+  that looks essay-shaped goes to media lanes or concepts/ — never writing/.
 
 ## Decision Protocol
 
@@ -20,8 +32,15 @@ not the source, not the skill that's running.
 | Article about a person -> `sources/` | -> `people/` | Primary subject is a person |
 | Meeting-derived company info -> `meetings/` only | -> ALSO update `companies/` | Entity propagation is mandatory |
 | Research about a company -> `sources/` | -> `companies/` | Primary subject is a company |
-| Reusable framework/thesis -> `sources/` | -> `concepts/` | It's a mental model |
-| Tweet thread about policy -> `media/` | -> `civic/` or `concepts/` | media/ is for content ops |
+| Reusable framework -> `sources/` | -> `concepts/` | It's a mental model |
+| A held, scoreable position -> `concepts/` | -> `theses/` | Positions are theses, not reference |
+| Tweet thread about policy -> `media/` | -> `concepts/` or `notes/` | civic/ is retired |
+| External essay/X-post -> `writing/` | -> `media/` lanes or `tweets/` | writing/ is Curtis-authored ONLY (LAW) |
+| Web-research output -> `research/` | -> `analysis/` | research/ is retired; author via `source:` frontmatter |
+| Guide/runbook -> `guides/` | -> `concepts/` with `kind: guide` | guides/ is retired |
+| Task/todo -> any brain page | -> KANBAN card | Tasks never live in the brain (LAW) |
+| Strategy doc -> `projects/` | -> `analysis/` or `concepts/`, linked from the project page | projects/ holds ENTITY pages only |
+| Decision -> a repo `docs/decisions/` file | -> timeline entry on the SUBJECT page (+`decisions/` page if major) | see RESOLVER.md §Decision system |
 
 ## Sanctioned exception: synthesis output is sui generis
 
@@ -36,6 +55,9 @@ exception:
 
 - `media/books/<slug>-personalized.md` (book-mirror output)
 - `media/articles/<slug>-personalized.md` (long-form article personalization)
+
+Under curtis-v2, synthesis output additionally stamps `type: synthesis` in
+frontmatter (a frontmatter-only type — path alone would type these `media`).
 
 If you find yourself wanting `media/<format>/` for raw ingest, that is still
 the anti-pattern in the table above. The exception is narrow: synthesized,

@@ -50,10 +50,8 @@ writes_to:
   - meetings/
   - concepts/
   - projects/
-  - civic/
   - writing/
   - analysis/
-  - guides/
 filing_exempt: true
 distinct_from:
   - name: brain-taxonomist

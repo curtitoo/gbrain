@@ -32,7 +32,7 @@ writes_to:
   - people/
   - companies/
   - meetings/
-  - daily/
+  - calendar/
   - media/
   - conversations/
   - sources/
@@ -258,7 +258,7 @@ for (const account of accounts) {
 
 Follow the three-tier calendar architecture:
 ```
-brain/daily/calendar/
+brain/calendar/
 ├── calendar-log.md              ← compiled truth (patterns, key people)
 ├── YYYY/
 │   ├── YYYY-MM.md               ← monthly summary
