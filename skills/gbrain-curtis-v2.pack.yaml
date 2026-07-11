@@ -1,0 +1,530 @@
+# gbrain-curtis-v2 — Curtis's 26-type convention pack (fork of gbrain-base-v2)
+#
+# Locked spec: MEMORY/WORK/20260709-193007_gbrain-revival-session1/
+# STRATEGY-SPEC-gbrain-conventions.md incl. amendments A1-A16 (2026-07-11).
+#
+# STANDALONE MANIFEST (A1): `extends` merging is UNIMPLEMENTED in the engine
+# (registry.ts — "T20 follow-up"); every type is declared here explicitly.
+# `migration_from` below is inert lineage metadata for custom packs (upgrade
+# discovery only enumerates bundled packs) — do not rely on it.
+#
+# DECLARATION ORDER IS PRECEDENCE (A2): type assignment is first-DECLARED-wins
+# over unanchored segment matching (markdown.ts inferTypeFromPack: needle =
+# '/'+prefix, path.includes(needle)). A path containing two declared prefixes
+# types as whichever type is declared FIRST in this file. Policy:
+#   1. dream-summary first — machine lane, unique prefix, never shadowed.
+#   2. Subject CONTAINERS next (project, concept, personal, tech, writing) —
+#      the outer lane wins for nested paths (projects/analysis/x → project,
+#      concepts/people/x → concept, projects/videos/x → media fixed → project).
+#   3. Entities (person, company), then temporal/comm lanes, then media &
+#      content lanes, then pipeline lanes (analysis, thesis, idea, decision).
+#   4. `note` LAST — its 8 drawer prefixes are common English words and must
+#      never shadow another lane.
+#   HARD CONSTRAINT: writing declared before idea — the dream yard writes
+#   wiki/originals/ideas/* which must type as writing (originals/), not idea.
+#   Reorder only with the collision matrix + test re-run
+#   (skills/gbrain-curtis-v2.collision-matrix.md, test/curtis-v2-collision-matrix.test.ts).
+#
+# wiki/ NEVER APPEARS in this pack. The wiki/ machine yard auto-types via the
+# unanchored matcher: wiki/people/* → person, wiki/personal/* → personal,
+# wiki/originals/* → writing, wiki/concepts/* → concept. Dream's write
+# allowlist lives in skills/_brain-filing-rules.json (dream_synthesize_paths)
+# and is enforced server-side by put_page — that allowlist, not any prefix
+# here, is the wiki-guard invariant (A13).
+#
+# Subtype stamps use `kind:` — `concept_kind` is NOT in the engine's
+# ALLOWED_SUBTYPE_FIELDS allowlist (A3).
+#
+# Aliases on types are LEGACY TYPE-NAME aliases (query closure), not paths.
+# Path aliases surviving per spec (each justified by a live machine writer):
+# originals/ (dream) → writing; conversations/ + voice-notes/ (importers) → source.
+
+api_version: gbrain-schema-pack-v1
+name: gbrain-curtis-v2
+version: 1.0.0
+description: Curtis conventions — 23 path-mapped + 3 frontmatter-only types (26 total). Fork of gbrain-base-v2 per STRATEGY-SPEC 2026-07-10 + A1-A16.
+gbrain_min_version: 0.42.0
+extends: null
+borrow_from: []
+takes_kinds:
+  - fact
+  - take
+  - bet
+  - hunch
+
+# Lineage metadata only — custom packs are not enumerated by upgrade discovery (A1).
+migration_from:
+  pack: gbrain-base-v2
+  version: "1.x"
+
+page_types:
+  # ── 1. Machine lane, pinned first ────────────────────────────────────────
+  - name: dream-summary
+    primitive: temporal
+    path_prefixes:
+      - dream-cycle-summaries/
+    extractable: false
+    expert_routing: false
+
+  # ── 2. Subject containers (outer lane wins over nested content prefixes) ─
+  - name: project
+    primitive: concept
+    path_prefixes:
+      - projects/
+    aliases:
+      - initiative
+      - workstream
+    extractable: false
+    expert_routing: false
+
+  - name: concept
+    primitive: concept
+    path_prefixes:
+      - concepts/
+    subtypes:
+      - name: guide
+        when:
+          frontmatter_field: kind
+          frontmatter_value: guide
+    aliases:
+      - concept-stub
+      - definition
+      - guide
+      - framework
+    extractable: true
+    expert_routing: false
+
+  - name: personal
+    primitive: concept
+    path_prefixes:
+      - personal/
+    extractable: false
+    expert_routing: false
+
+  - name: tech
+    primitive: concept
+    path_prefixes:
+      - tech/
+    # External-tech-as-entity ONLY (spec softened the v3.5 "any repo always"
+    # rule): pages whose SUBJECT is an external repo/tool/SaaS. Internal
+    # architecture → projects/<repo> + concepts (domain: hermes).
+    extractable: false
+    expert_routing: false
+
+  - name: writing
+    primitive: media
+    path_prefixes:
+      - writing/
+      - originals/
+    subtypes:
+      - name: original
+        when:
+          path_pattern: "originals/"
+    aliases:
+      - draft
+      - post-draft
+      - original
+    extractable: true
+    expert_routing: false
+
+  # ── 3. Entities ───────────────────────────────────────────────────────────
+  - name: person
+    primitive: entity
+    path_prefixes:
+      - people/
+    aliases:
+      - people
+      - contact
+      - individual
+      - founder
+      - partner
+      - partner-profile
+    extractable: false
+    expert_routing: true
+
+  - name: company
+    primitive: entity
+    path_prefixes:
+      - companies/
+      - products/
+      - orgs/
+    subtypes:
+      - name: company
+        when:
+          path_pattern: "^companies/"
+      - name: product
+        when:
+          path_pattern: "^products/"
+      - name: org
+        when:
+          path_pattern: "^orgs/"
+    aliases:
+      - yc-company
+      - product
+      - org
+      - people-org
+      - organization
+      - startup
+      - business
+    extractable: false
+    expert_routing: true
+
+  # ── 4. Temporal / comm lanes ─────────────────────────────────────────────
+  - name: meeting
+    primitive: temporal
+    path_prefixes:
+      - meetings/
+    aliases:
+      - meeting-note
+      - meeting-transcript
+    extractable: true
+    expert_routing: false
+
+  - name: calendar-event
+    primitive: temporal
+    path_prefixes:
+      - calendar/
+    # cal/ and daily/calendar/ are RETIRED — calendar-sync feeder retargets
+    # to calendar/ during its rebuild (writes to wrong brain root today).
+    aliases:
+      - calendar
+      - event
+      - daily
+    extractable: false
+    expert_routing: false
+
+  - name: deal
+    primitive: temporal
+    path_prefixes:
+      - deals/
+    aliases:
+      - investment
+      - term-sheet
+    extractable: false
+    expert_routing: false
+
+  - name: email
+    primitive: temporal
+    path_prefixes:
+      - emails/
+    # correspondence/ RETIRED — email-to-brain feeder retargets during surgery.
+    aliases:
+      - email-thread
+      - correspondence
+    extractable: true
+    expert_routing: false
+
+  - name: slack
+    primitive: temporal
+    path_prefixes:
+      - slack/
+    aliases:
+      - slack-message
+      - slack-thread
+    extractable: true
+    expert_routing: false
+
+  - name: tweet
+    primitive: media
+    path_prefixes:
+      - tweets/
+      - twitter/
+    subtypes:
+      - name: single
+        when:
+          frontmatter_field: thread_length
+          frontmatter_value: 1
+      - name: bundle
+        when:
+          frontmatter_field: bundle
+          frontmatter_value: true
+      - name: stub
+        when:
+          frontmatter_field: stub
+          frontmatter_value: true
+    aliases:
+      - tweet-single
+      - tweet-thread
+      - tweet-bundle
+      - tweet-stub
+      - twitter-post
+    extractable: true
+    expert_routing: false
+
+  - name: social-digest
+    primitive: temporal
+    path_prefixes:
+      - digests/social/
+    subtypes:
+      - name: daily
+        when:
+          path_pattern: "/daily/"
+      - name: monthly
+        when:
+          path_pattern: "/monthly/"
+    aliases:
+      - social-digest-daily
+      - social-digest-monthly
+    extractable: false
+    expert_routing: false
+
+  # ── 5. Media & content lanes ─────────────────────────────────────────────
+  - name: media
+    primitive: media
+    path_prefixes:
+      - media/
+      - videos/
+      - articles/
+      - essays/
+      - books/
+      - podcasts/
+      - blog/
+      - posts/
+    subtypes:
+      - name: video
+        when:
+          path_pattern: "^videos/"
+      - name: article
+        when:
+          path_pattern: "^articles/"
+      - name: essay
+        when:
+          path_pattern: "^essays/"
+      - name: book
+        when:
+          path_pattern: "^books/"
+      - name: podcast
+        when:
+          path_pattern: "^podcasts/"
+      - name: blog
+        when:
+          path_pattern: "^(blog|posts)/"
+    aliases:
+      - article
+      - video
+      - essay
+      - book
+      - podcast
+      - blog-post
+      - youtube-video
+      - podcast-episode
+    extractable: true
+    expert_routing: false
+
+  - name: source
+    primitive: media
+    path_prefixes:
+      - sources/
+      - conversations/
+      - voice-notes/
+    subtypes:
+      - name: conversation
+        when:
+          path_pattern: "^conversations/"
+      - name: voice-note
+        when:
+          path_pattern: "^voice-notes/"
+    aliases:
+      - sources/article
+      - source/article
+      - transcript
+      - ref
+      - conversation
+      - voice-note
+    extractable: true
+    expert_routing: false
+
+  # ── 6. Pipeline lanes (analysis → thesis → idea → decision) ─────────────
+  - name: analysis
+    primitive: media
+    path_prefixes:
+      - analysis/
+    # research/ and agent/ RETIRED — perplexity-research + academic-verify
+    # retarget to analysis/; author recorded via source: frontmatter.
+    aliases:
+      - pricing-analysis
+      - hiring-analysis
+      - market-analysis
+      - competitive-analysis
+      - research
+      - organization-research
+    extractable: true
+    expert_routing: false
+
+  - name: thesis
+    primitive: concept
+    path_prefixes:
+      - theses/
+    aliases:
+      - investment-thesis
+    extractable: true
+    expert_routing: false
+
+  - name: idea
+    primitive: concept
+    path_prefixes:
+      - ideas/
+    # stage: frontmatter is a MIRROR only — the kanban card owns work state.
+    aliases:
+      - business-idea
+    extractable: false
+    expert_routing: false
+
+  - name: decision
+    primitive: temporal
+    path_prefixes:
+      - decisions/
+    # MAJOR decisions only get a decisions/ page; EVERY decision is a dated
+    # timeline entry (time+nonce disambiguated, A8) on its SUBJECT page.
+    # See skills/RESOLVER.md §Decision system.
+    aliases:
+      - adr
+    extractable: false
+    expert_routing: false
+
+  # ── 7. Annotation ─────────────────────────────────────────────────────────
+  - name: atom
+    primitive: annotation
+    path_prefixes:
+      - atoms/
+    subtypes:
+      - name: extraction
+        when:
+          frontmatter_field: origin
+          frontmatter_value: extraction
+      - name: manual
+        when:
+          frontmatter_field: origin
+          frontmatter_value: manual
+      - name: lore
+        when:
+          frontmatter_field: origin
+          frontmatter_value: lore
+    aliases:
+      - atom-extraction
+      - atom-manual
+      - atom-lore
+      - content-atom
+      - lore
+    extractable: false
+    expert_routing: false
+
+  # ── 8. Catch-all, pinned LAST (drawer prefixes are common words) ─────────
+  - name: note
+    primitive: concept
+    path_prefixes:
+      - notes/
+      - inbox/
+      - archive/
+      - prompts/
+      - programs/
+      - org/
+      - hiring/
+      - household/
+      - finance/
+    subtypes:
+      - name: inbox
+        when:
+          path_pattern: "^inbox/"
+      - name: archive
+        when:
+          path_pattern: "^archive/"
+      - name: prompts
+        when:
+          path_pattern: "^prompts/"
+      - name: programs
+        when:
+          path_pattern: "^programs/"
+      - name: org
+        when:
+          path_pattern: "^org/"
+      - name: hiring
+        when:
+          path_pattern: "^hiring/"
+      - name: household
+        when:
+          path_pattern: "^household/"
+      - name: finance
+        when:
+          path_pattern: "^finance/"
+    aliases:
+      - memo
+      - anecdote
+      - insight
+      - principle
+    extractable: true
+    expert_routing: false
+
+  # ── 9. Frontmatter-only types (no path lane; writers stamp type directly) ─
+  - name: code
+    primitive: concept
+    path_prefixes: []
+    # Stamped by the gbrain-code hook (S2.2); pages keyed to symbols/repos.
+    extractable: false
+    expert_routing: false
+
+  - name: image
+    primitive: media
+    path_prefixes: []
+    extractable: false
+    expert_routing: false
+
+  - name: synthesis
+    primitive: media
+    path_prefixes: []
+    # Sui-generis synthesized output (book mirrors, personalized reads) —
+    # writers stamp type: synthesis; media/<format>/ paths otherwise type media.
+    aliases:
+      - synthesis-output
+    extractable: false
+    expert_routing: false
+
+link_types:
+  - name: partner_of
+    inverse: partner_of
+  - name: relates_to
+    inverse: relates_to
+  - name: mentions
+  - name: discusses
+  - name: founded
+    inverse: founded_by
+  - name: works_at
+    inverse: employs
+  - name: invested_in
+    inverse: investor_of
+  - name: sourced_from
+  - name: derived_from
+  - name: supersedes
+  - name: redirects_to
+  - name: attended
+    inverse: attended_by
+  - name: authored
+    inverse: authored_by
+  - name: attributed_to
+
+mapping_rules:
+  # Import-time retypes for old-vault content (S2.1 selective import).
+  - kind: retype
+    from_type: guide
+    to_type: concept
+    subtype_field: kind
+    subtype: guide
+  - kind: retype
+    from_type: research
+    to_type: analysis
+  - kind: retype
+    from_type: original
+    to_type: writing
+  - kind: retype
+    from_type: daily
+    to_type: calendar-event
+  - kind: retype
+    from_type: correspondence
+    to_type: email
+
+  # D12 catch-all: undeclared types → note with legacy_type preserved. LAST.
+  - kind: retype
+    from_type: "*unknown*"
+    to_type: note
+    subtype_field: legacy_type
+    subtype: "*original_type*"
