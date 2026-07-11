@@ -52,7 +52,7 @@ describe('pack shape', () => {
 describe('top-level lanes type to themselves', () => {
   const lanes: Array<[string, string]> = [
     ['dream-cycle-summaries/2026-07-11', 'dream-summary'],
-    ['projects/hermes-config', 'project'],
+    ['projects/proj-alpha', 'project'],
     ['concepts/compounding', 'concept'],
     ['personal/health-log', 'personal'],
     ['tech/aleph', 'tech'],

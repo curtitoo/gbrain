@@ -1353,9 +1353,74 @@ Init + upgrade banners auto-skip in non-TTY too.
 
 Source: https://raw.githubusercontent.com/garrytan/gbrain/master/skills/RESOLVER.md
 
-# GBrain Skill Resolver
+# GBrain Skill Resolver (v4 — curtis-v2 conventions, 2026-07-11)
 
 This is the dispatcher. Skills are the implementation. **Read the skill file before acting.** If two skills could match, read both. They are designed to chain (e.g., ingest then enrich for each entity).
+
+Filing conventions in this file are the human layer of a THREE-artifact contract kept in ONE commit whenever any changes (A14): `skills/gbrain-curtis-v2.pack.yaml` (type assignment), `skills/_brain-filing-rules.json` (machine-audited rules + dream allowlist), this file (routing doctrine). Audit: `gbrain check-resolvable` + `test/curtis-v2-collision-matrix.test.ts`.
+
+## LAWS (read first, zero exceptions)
+
+- **wiki/ is the machine yard.** Humans and agents NEVER file into `wiki/` or `dream-cycle-summaries/`. Only the dream cycle writes there, server-enforced via `dream_synthesize_paths` in `_brain-filing-rules.json`. Save/capture/eiirp flows MUST reject any wiki/ target and re-route to a canonical lane.
+- **writing/ is Curtis-authored prose ONLY.** A page goes to `writing/` (or the dream's `originals/`) only when Curtis wrote or commissioned the prose. External content that *looks* essay-shaped goes to `media/`, `tweets/`, or `concepts/` — never `writing/`. (The old vault's 8 writing/ pages are mis-typed external X-posts; classify at import, don't repeat.)
+- **Tasks never live in the brain.** Kanban cards own work state. No task pages, no ops/tasks, no plans/. Task requests route to the kanban, not to any brain page.
+- **scratch/ is fenced out.** Not a knowledge lane; never promote or link scratch pages.
+- **Declaration order in the pack is precedence.** Never reorder `gbrain-curtis-v2.pack.yaml` without regenerating the collision matrix and re-running its test.
+
+## The lanes (MECE — one home per content class)
+
+Decision test, in order. The FIRST question that answers YES picks the lane:
+
+1. **Is it Curtis-authored/commissioned prose?** → `writing/` (dream-captured original framings land in `originals/`, same type).
+2. **Is it a position someone holds — falsifiable, scoreable, held over time?** → `theses/` (Curtis's or a tracked influencer's; expect takes-fence scoring).
+3. **Is it actionable — something to potentially build, write, or do?** → `ideas/` (pipeline `stage:` frontmatter is a MIRROR; the kanban card owns state).
+4. **Is it a dated investigation product about a topic?** → `analysis/` (perplexity/academic/deep-dive output; author recorded in `source:` frontmatter — `research/` and `agent/` are retired).
+5. **Is it reusable reference knowledge — framework, mental model, definition, guide?** → `concepts/` (guides carry `kind: guide`).
+6. **Is its primary subject an entity or event?** → `people/`, `companies/` (+`products/`, `orgs/`), `deals/`, `meetings/`, `calendar/`, `projects/`, `tech/` (external repos/tools/SaaS as SUBJECT only — internal architecture is `projects/<repo>` + concepts).
+7. **Is it raw captured material?** → `sources/` (bulk/API dumps), `conversations/` (chat exports), `voice-notes/` (transcripts), `emails/`, `slack/`, `tweets/`, `media/` (+format dirs), `digests/social/`.
+8. **None of the above and worth keeping?** → `notes/` or the matching drawer (`inbox/ archive/ prompts/ programs/ org/ hiring/ household/ finance/`).
+
+Boundary rulings the old taxonomy got wrong:
+- influencer "trend" → `concepts/` with `kind: trend` (reference, not position, not action).
+- A thesis-shaped dream original stays `originals/` (writing) until Curtis promotes it to `theses/` — promotion is explicit, never automatic.
+- An idea that grows a defended position: the position goes to `theses/`, the buildable remains in `ideas/`, cross-linked. Never both in one page.
+- Strategy/roadmap DOCUMENTS are `analysis/` or `concepts/` linked FROM `projects/<x>` — only entity pages live in `projects/`.
+
+## Writer × lane matrix (every machine writer files in exactly these lanes)
+
+| Writer | Lane(s) | Notes |
+|---|---|---|
+| email-to-brain feeder | `emails/` (+enrich `people/`, `companies/`) | correspondence/ retired |
+| calendar-sync feeder | `calendar/` | cal/, daily/calendar/ retired; feeder rebuild pending |
+| influencer pipeline | `people/`, `theses/`, `ideas/`, `concepts/` (kind: trend) | evidence layer (tweets/, digests/social/) later |
+| Ladder radar | `ideas/` | stage: mirror only |
+| dream cycle (mode 1) | allowlist ONLY: wiki yard + `dream-cycle-summaries/` | see LAWS |
+| perplexity-research | `analysis/` | retargeted from research/ |
+| academic-verify | `analysis/` | retargeted from research/ |
+| meeting-ingestion | `meetings/` (+entity propagation) | |
+| voice-note-ingest | `voice-notes/` raw; derived → lane test above | never writing/ unless Curtis prose |
+| archive-crawler | subject lanes via lane test; Curtis prose → `writing/` | reads _brain-filing-rules.json at runtime |
+| inbox-triage | promotes `inbox/` → lane test above | |
+| media-ingest | `media/` (+format subdirs) | |
+| idea-ingest | `ideas/` or `concepts/` per lane test | |
+| capture / eiirp | lane test above; NEVER wiki/ | |
+| enrich / data-research | `people/`, `companies/`, subject pages | |
+| book-mirror / strategic-reading | `type: synthesis` (frontmatter-only) at media/<format>/ | |
+| signal-detector / signal-to-idea | `ideas/` on promotion | |
+| gbrain-code hook | `type: code` (frontmatter-only) | S2.2 |
+| kanban/agents (decisions) | timeline entries on SUBJECT pages; majors → `decisions/` | see Decision system |
+
+No writer may file outside its row. A writer needing a new lane = a pack + resolver + rules change (one commit).
+
+## Decision system (topic-page hybrid, locked 2026-07-10)
+
+- **Subject pages are the living artifact.** A strategy/architecture topic gets ONE canonical page (typed `concept` or `project`). Its compiled truth = current position; its timeline = append-only dated DECISION entries.
+- **Every decision → a timeline entry on its subject page.** Entry summary MUST start with `DECISION <HH:MM>+<4-char nonce>:` — same-day entries with identical (date, summary, source) silently collapse in the engine (A8), the time+nonce prevents it.
+- **Major decisions additionally get a `decisions/` page** (alternatives considered, kill-criteria, supersedes links), linked from the timeline entry.
+- **Capture gate:** when an agent detects a decision in conversation, it ASKS ("save this decision?") only when the "future-me/agent could plausibly do the opposite and waste hours" test passes. Agent writes only with explicit Curtis authorization, recorded inside the entry text (`authorized: Curtis 2026-07-11`) — authorization is convention, not mechanism (A10).
+- **Canonicalize before creating:** run `resolve_slugs`/search for an existing subject page BEFORE minting one (A11). Subject sprawl is the failure mode.
+- **Enforcement is warn-never-block:** grounding packs quote relevant decisions at card dispatch; the pre-edit impact plugin anchors on subject pages; session conflict checks surface contradictions.
+- Repo `docs/decisions/` and "ADR" are RETIRED. Law-shaped lines live in repo CLAUDE.md. Hindsight is never a decision home. Expiry/review (`review_by`, kill-criteria frontmatter) reserved for CoS design.
 
 ## Always-on (every message)
 
@@ -1380,21 +1445,34 @@ This is the dispatcher. Skills are the implementation. **Read the skill file bef
 | "Triage this idea", "evaluate idea", "advance idea", "kill this idea", "idea pipeline status" | `skills/idea-triage/SKILL.md` |
 | "Triage inbox", "process inbox", "classify inbox", "clean inbox" | `skills/inbox-triage/SKILL.md` |
 | "Promote signals to ideas", "check for new business ideas from influencers", "signal to idea promotion" | `skills/signal-to-idea/SKILL.md` |
+| "save this decision", decision detected in conversation | §Decision system above + `skills/capture/SKILL.md` |
 
-
-## Namespace routing (brain filing by type)
+## Namespace routing (brain filing by type — full table in §The lanes)
 
 | Namespace | Content Type | Primary Skill |
 |-----------|-------------|---------------|
-| ideas/ | Business and technical ideas with pipeline frontmatter | idea-triage (evaluation), idea-ingest (intake) |
-| articles/ | Wiki-llm research articles (Karpathy schema) | data-research |
-| concepts/ | Frameworks, mental models, reusable thinking | idea-ingest (create), query (read) |
 | people/ | Person dossiers with compiled truth + timeline | enrich |
-| companies/ | Company profiles | enrich |
+| companies/ products/ orgs/ | Company/product/org profiles | enrich |
+| deals/ | Financing / M&A transactions | data-research |
 | meetings/ | Meeting transcripts + summaries | meeting-ingestion |
-| digests/ | Influencer pipeline daily digests | Cron-generated |
-| reflections/ | Dream-cycle nightly reflections | Cron-generated |
-| plans/ | Daily plans | daily-task-prep |
+| calendar/ | Calendar events (date-keyed) | calendar-sync (rebuild pending) |
+| emails/ | Email threads | email-to-brain cron |
+| slack/ | Slack captures | (feeder) |
+| tweets/ twitter/ | Tweet captures | media-ingest / influencer |
+| digests/social/ | Influencer pipeline daily digests | Cron-generated |
+| media/ videos/ articles/ essays/ books/ podcasts/ blog/ posts/ | External content by format | media-ingest, data-research |
+| sources/ conversations/ voice-notes/ | Raw captures & imports | ingest, voice-note-ingest |
+| analysis/ | Dated investigation products | perplexity-research, academic-verify, eiirp |
+| theses/ | Held positions, scoreable over time | influencer pipeline, Curtis |
+| ideas/ | Actionable candidates (kanban mirrors stage) | idea-triage (evaluation), idea-ingest (intake) |
+| concepts/ | Frameworks, mental models, guides (kind: guide) | idea-ingest (create), query (read) |
+| decisions/ | MAJOR decision records | §Decision system |
+| projects/ | Project ENTITY pages (docs go to analysis/concepts) | enrich |
+| tech/ | EXTERNAL repos/tools/SaaS as subject | idea-ingest |
+| personal/ | Personal-life content | capture |
+| writing/ originals/ | Curtis-authored prose (LAW above) | Curtis; dream (originals/) |
+| notes/ + drawers | Everything else worth keeping | capture |
+| dream-cycle-summaries/ | Machine lane — dream orchestrator only | (never file here) |
 
 ## Content & media ingestion
 
@@ -1437,8 +1515,7 @@ This is the dispatcher. Skills are the implementation. **Read the skill file bef
 
 | Trigger | Skill |
 |---------|-------|
-| Task add/remove/complete/defer/review | `skills/daily-task-manager/SKILL.md` |
-| Morning prep, meeting context, day planning | `skills/daily-task-prep/SKILL.md` |
+| Task add/remove/complete/defer/review | KANBAN (personal board) — tasks never live in the brain (LAW) |
 | Daily briefing, "what's happening today" | `skills/briefing/SKILL.md` |
 | Cron scheduling, quiet hours, job staggering | `skills/cron-scheduler/SKILL.md` |
 | "get more out of gbrain", "is my brain set up right", "weekly brain checkup", "advise me on my brain", "gbrain advisor" | `skills/gbrain-advisor/SKILL.md` |
@@ -1485,6 +1562,7 @@ When multiple skills could match:
 3. If the user mentions a person/company, check if enrich or query fits better
 4. Chaining is explicit in each skill's Phases section
 5. When in doubt, ask the user
+6. For FILING (which directory), the lane test in §The lanes is authoritative — skills defer to it
 
 ## Conventions (cross-cutting)
 

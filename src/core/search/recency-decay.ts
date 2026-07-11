@@ -47,7 +47,7 @@ export const DEFAULT_RECENCY_DECAY: RecencyDecayMap = {
   // Time-bound personal records — strongest decay, biggest coefficient.
   // The user is asking "what was on my plate this week" / "what did we
   // discuss in our 1:1"; freshness IS the signal.
-  'calendar/':       { halflifeDays:  14, coefficient: 1.5 },
+  'daily/':          { halflifeDays:  14, coefficient: 1.5 },
   'meetings/':       { halflifeDays:  60, coefficient: 1.0 },
 
   // Bulk feeds — generic prefixes only. Real fork names go in user
@@ -138,7 +138,7 @@ export function parseRecencyDecayEnv(env: string | undefined): RecencyDecayMap {
 /**
  * Parse a `recency:` section from a parsed gbrain.yml. The shape is:
  *   recency:
- *     calendar/: { halflifeDays: 14, coefficient: 1.5 }
+ *     daily/: { halflifeDays: 14, coefficient: 1.5 }
  *     concepts/: { halflifeDays: 0, coefficient: 0 }
  *
  * `parsed` is the already-parsed YAML object. This is a pure transform.
