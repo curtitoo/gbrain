@@ -1,7 +1,16 @@
-# gbrain-curtis-v2 — Curtis's 26-type convention pack (fork of gbrain-base-v2)
+# gbrain-curtis-v2 — Curtis's 29-type convention pack (fork of gbrain-base-v2)
 #
 # Locked spec: MEMORY/WORK/20260709-193007_gbrain-revival-session1/
 # STRATEGY-SPEC-gbrain-conventions.md incl. amendments A1-A16 (2026-07-11).
+#
+# v1.1.0 (2026-07-12): GOAL SYSTEM per spec v1.2 (WORK/20260712-goal-system-design,
+# Codex ADOPT-WITH-CHANGES). Adds goal + experiment types, folds the previously
+# runtime-only initiative type into the repo copy (drift reconciliation: the
+# 07-11 session added it to the deployed pack without committing), removes the
+# project→initiative alias it shadowed, and adds 6 goal-graph link types
+# (pursues, under, depends_on, evidence, kills, contributes_to). Field schemas
+# are CONVENTIONS documented per-type below (manifest-v1 has no field specs);
+# enforcement = seeds + smoke-tests.d assertions + /goals skill sweeps.
 #
 # STANDALONE MANIFEST (A1): `extends` merging is UNIMPLEMENTED in the engine
 # (registry.ts — "T20 follow-up"); every type is declared here explicitly.
@@ -41,8 +50,8 @@
 
 api_version: gbrain-schema-pack-v1
 name: gbrain-curtis-v2
-version: 1.0.0
-description: Curtis conventions — 23 path-mapped + 3 frontmatter-only types (26 total). Fork of gbrain-base-v2 per STRATEGY-SPEC 2026-07-10 + A1-A16.
+version: 1.1.0
+description: Curtis conventions — 26 path-mapped + 3 frontmatter-only types (29 total). Fork of gbrain-base-v2 per STRATEGY-SPEC 2026-07-10 + A1-A16; v1.1.0 adds the goal system (goal, experiment, initiative + 6 goal-graph link types) per spec v1.2.
 gbrain_min_version: 0.42.0
 extends: null
 borrow_from: []
@@ -72,7 +81,8 @@ page_types:
     path_prefixes:
       - projects/
     aliases:
-      - initiative
+      # v1.1.0: `initiative` alias REMOVED — initiative is now a declared type
+      # (goal system); keeping the alias would shadow it (aliasShadowsType).
       - workstream
     extractable: false
     expert_routing: false
@@ -355,6 +365,11 @@ page_types:
     primitive: concept
     path_prefixes:
       - theses/
+    # v1.1.0 goal-system conventions: frontmatter carries
+    #   status: active|confirmed|killed
+    # Confidence is NOT a frontmatter field — it is the weight on the thesis's
+    # standing take, updated as child experiment verdicts resolve.
+    # Body = rationale. Killed theses record the killing decision via `kills`.
     aliases:
       - investment-thesis
     extractable: true
@@ -377,8 +392,69 @@ page_types:
     # MAJOR decisions only get a decisions/ page; EVERY decision is a dated
     # timeline entry (time+nonce disambiguated, A8) on its SUBJECT page.
     # See skills/RESOLVER.md §Decision system.
+    # v1.1.0 goal-system conventions: frontmatter adds
+    #   domain: strategy|tech|pricing   reversed_by: <decision slug, optional>
     aliases:
       - adr
+    extractable: false
+    expert_routing: false
+
+  # ── 6b. Goal system (v1.1.0, spec v1.2) ──────────────────────────────────
+  # PAGES ARE NODES, TAKES ARE CLAIMS-WITH-VERDICTS RIDING ON NODES, CARDS ARE
+  # LABOR. One number-kind per level: goal=LAGGING outcome target, initiative=
+  # LEADING production target, experiment=ONE-SHOT windowed criterion.
+  # Parent tree is acyclic (goal → thesis → initiative → experiment via `under`);
+  # cross-ref edges (evidence/depends_on/contributes_to) may point anywhere.
+  # Verdicts are COMPUTED from the declared metric_source, never LLM-graded.
+  - name: goal
+    primitive: concept
+    path_prefixes:
+      - goals/
+    # Frontmatter conventions (top-level only; NO sub-goals ever — a child's
+    # target is a FIELD on the child, keeping the parent tree acyclic):
+    #   metric: <string>            target_value: <number>
+    #   current_value: <number>     metric_source: <clickhouse query id | manual:*>
+    #   due_date: YYYY-MM-DD        status: active|achieved|abandoned
+    #   stall_signal: due-slip|staleness|no-active-work
+    #     (staleness clock keyed to SUBSTANTIVE events only, not any edit)
+    # manual:* metric_source is allowed but flagged; excluded from calibration.
+    extractable: false
+    expert_routing: false
+
+  - name: initiative
+    primitive: concept
+    path_prefixes:
+      - initiatives/
+    # v1.1.0 REDEFINITION (was runtime-only bare type from 07-11): a STANDING
+    # BODY OF WORK from birth; experiments resolve WITHIN it. Judged by
+    # PRODUCTION (still generating?), never by verdict. Frontmatter:
+    #   channel: <string>           parent_thesis: <thesis slug>
+    #   status: proposed|active|paused|retired
+    #   production_metric: <string> production_target: <number>
+    #   current_production: <number> metric_source: <query id | manual:*>
+    # Body = the standing practice. BODY EDITS MUST CITE the experiment slug
+    # that earned them (enforced by /goals skill sweep, not schema).
+    extractable: false
+    expert_routing: false
+
+  - name: experiment
+    primitive: concept
+    path_prefixes:
+      - experiments/
+    # A bet that RESOLVES (always ends). Frontmatter:
+    #   hypothesis: <string>
+    #   success_criteria:
+    #     metric: <string>   threshold: <number>
+    #     window: <ISO range> metric_source: <query id | manual:*>
+    #   criteria_author: human|joint   # agent-solo BANNED in v1
+    #   window_start: YYYY-MM-DD  window_end: YYYY-MM-DD
+    #   state: idea|running|paused|verdict
+    #   parent: <initiative XOR thesis slug>  # exactly one, via `under` link
+    #   session_id: <bound worker session>    # one-session-per-experiment
+    #   contract_hash: <sha>                  # close receipt, set at close
+    #   closed_at: <ISO>                      # close receipt
+    # Criterion text is SNAPSHOTTED into the take at launch; the take's
+    # resolution (correct/incorrect/partial/unresolvable) is the verdict.
     extractable: false
     expert_routing: false
 
@@ -501,6 +577,20 @@ link_types:
   - name: authored
     inverse: authored_by
   - name: attributed_to
+  # v1.1.0 goal-graph link types (audit 2026-07-12: none pre-existed).
+  # Parent-tree edges (acyclic): under. Alignment: pursues, contributes_to.
+  # Cross-ref: depends_on, evidence. Lifecycle: kills.
+  - name: pursues
+    inverse: pursued_by
+  - name: under
+    inverse: parent_of
+  - name: depends_on
+    inverse: depended_on_by
+  - name: evidence
+    inverse: evidenced_by
+  - name: kills
+    inverse: killed_by
+  - name: contributes_to
 
 mapping_rules:
   # Import-time retypes for old-vault content (S2.1 selective import).
