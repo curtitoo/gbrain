@@ -27,8 +27,8 @@ const ts = (path: string) => {
 };
 
 describe('pack shape', () => {
-  test('declares exactly 26 types', () => {
-    expect(pack.page_types.length).toBe(26);
+  test('declares exactly 29 types', () => {
+    expect(pack.page_types.length).toBe(29);
   });
   test('no wiki/ prefix anywhere in the pack', () => {
     for (const pt of pack.page_types) {
