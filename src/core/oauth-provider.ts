@@ -684,10 +684,21 @@ export class GBrainOAuthProvider implements OAuthServerProvider {
         ? (permissions as Record<string, unknown>).source_id
         : undefined;
       const { sourceId, allowedSources } = parseLegacyTokenScope(sourceGrant);
+      // Parity with mcp/http-transport.ts verifyAccessToken: honor the
+      // per-token takes-holder allow-list. Pre-fix this path dropped it, so
+      // serve-http's `authInfo.takesHoldersAllowList ?? ['world']` silently
+      // ignored operator grants and non-world takes were invisible over MCP.
+      const rawHolders = permissions && typeof permissions === 'object'
+        ? (permissions as Record<string, unknown>).takes_holders
+        : undefined;
+      const takesHoldersAllowList = Array.isArray(rawHolders)
+        ? (rawHolders as unknown[]).filter((h): h is string => typeof h === 'string')
+        : ['world'];
       return {
         token,
         clientId: name,
         clientName: name,
+        takesHoldersAllowList,
         scopes: ['read', 'write', 'admin'],
         expiresAt: Math.floor(Date.now() / 1000) + 365 * 24 * 3600, // Legacy tokens never expire — set 1yr future
         // Legacy tokens without an explicit permissions.source_id grant keep
